@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git config:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(dir:*)",
+      "Bash(rd /s /q __pycache__)"
     ]
   }
 }

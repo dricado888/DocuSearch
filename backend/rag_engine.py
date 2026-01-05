@@ -19,27 +19,27 @@ class PaperQA:
         self.groq_api_key = groq_api_key
         self.persist_directory = persist_directory
         
-        # Free local embeddings
-        print("Loading embedding model...")
+        # Better embeddings - BAAI/bge-small-en-v1.5 is much more accurate
+        print("Loading embedding model (this may take a moment)...")
         self.embeddings = HuggingFaceEmbeddings(
-            model_name="all-MiniLM-L6-v2",
+            model_name="BAAI/bge-small-en-v1.5",
             model_kwargs={'device': 'cpu'},
             encode_kwargs={'normalize_embeddings': True}
         )
         print("Embedding model loaded!")
         
-        # Groq LLM (FREE!)
+        # Groq LLM (FREE!) - using best model with more tokens
         self.llm = ChatGroq(
             api_key=groq_api_key,
             model="llama-3.3-70b-versatile",
             temperature=0.1,
-            max_tokens=1024
+            max_tokens=2048  # Increased for more detailed answers
         )
         
-        # Text splitter
+        # Text splitter - larger chunks for better context
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
+            chunk_size=1500,
+            chunk_overlap=300,
             length_function=len,
             separators=["\n\n", "\n", ". ", " ", ""]
         )
@@ -50,40 +50,64 @@ class PaperQA:
     def load_pdf(self, pdf_path: str) -> List[Document]:
         if not os.path.exists(pdf_path):
             raise FileNotFoundError(f"PDF not found: {pdf_path}")
-        
-        loader = PyPDFLoader(pdf_path)
-        pages = loader.load()
-        
-        filename = os.path.basename(pdf_path)
-        for page in pages:
-            page.metadata["source"] = filename
-            page.metadata["paper"] = filename.replace(".pdf", "")
-        
-        chunks = self.text_splitter.split_documents(pages)
-        print(f"Loaded {filename}: {len(pages)} pages → {len(chunks)} chunks")
-        return chunks
+
+        try:
+            loader = PyPDFLoader(pdf_path)
+            pages = loader.load()
+
+            filename = os.path.basename(pdf_path)
+
+            # Clean text to remove problematic Unicode characters
+            for page in pages:
+                # Replace common Unicode characters that cause issues
+                page.page_content = page.page_content.encode('ascii', 'ignore').decode('ascii')
+                page.metadata["source"] = filename
+                page.metadata["paper"] = filename.replace(".pdf", "")
+
+            chunks = self.text_splitter.split_documents(pages)
+            # Encode filename for safe printing on Windows console
+            safe_filename = filename.encode('ascii', 'ignore').decode('ascii')
+            print(f"Loaded {safe_filename}: {len(pages)} pages -> {len(chunks)} chunks")
+            return chunks
+        except Exception as e:
+            # If PDF loading fails, raise a more informative error
+            filename = os.path.basename(pdf_path)
+            safe_filename = filename.encode('ascii', 'ignore').decode('ascii')
+            raise ValueError(f"{safe_filename}: {str(e)}")
     
     def create_vectorstore(self, documents: List[Document]) -> None:
         if not documents:
             raise ValueError("No documents to index!")
-        
-        print(f"Creating vector store with {len(documents)} chunks...")
-        self.vectorstore = Chroma.from_documents(
-            documents=documents,
-            embedding=self.embeddings,
-            persist_directory=self.persist_directory
-        )
-        print("Vector store created!")
+
+        if self.vectorstore is None:
+            # First upload - create new vectorstore
+            print(f"Creating vector store with {len(documents)} chunks...")
+            self.vectorstore = Chroma.from_documents(
+                documents=documents,
+                embedding=self.embeddings,
+                persist_directory=self.persist_directory
+            )
+            print("Vector store created!")
+        else:
+            # Subsequent uploads - add to existing vectorstore
+            print(f"Adding {len(documents)} chunks to existing vector store...")
+            self.vectorstore.add_documents(documents)
+            print("Documents added to vector store!")
     
     def query(self, question: str, k: int = 4) -> Dict[str, Any]:
         if not self.vectorstore:
             raise ValueError("No vector store loaded!")
-        
+
+        # Use MMR (Maximum Marginal Relevance) for better diversity and relevance
         retriever = self.vectorstore.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": k}
+            search_type="mmr",
+            search_kwargs={
+                "k": k,
+                "fetch_k": k * 3,  # Fetch more candidates then filter
+                "lambda_mult": 0.7  # Balance between relevance (1.0) and diversity (0.0)
+            }
         )
-        
+
         relevant_docs = retriever.invoke(question)
         
         context_parts = []
@@ -100,16 +124,23 @@ class PaperQA:
         context = "\n\n".join(context_parts)
         
         prompt = ChatPromptTemplate.from_template("""
-You are a helpful research assistant. Answer the question based ONLY on the provided context. 
-If the context doesn't contain enough information, say so clearly.
-Cite sources using [Source N] format.
+You are an expert research assistant analyzing academic documents. Your task is to provide accurate, detailed answers based ONLY on the provided context.
 
-Context:
+INSTRUCTIONS:
+1. Read ALL the provided sources carefully before answering
+2. Answer the question thoroughly using information from the context
+3. Cite specific sources using [Source N] format when making claims
+4. If multiple sources contain relevant information, synthesize them
+5. If the context lacks sufficient information, explicitly state: "The provided documents do not contain enough information to answer this question"
+6. Be specific and detailed - include relevant facts, numbers, and examples from the sources
+7. Do not make assumptions or add information not present in the context
+
+CONTEXT FROM DOCUMENTS:
 {context}
 
-Question: {question}
+USER QUESTION: {question}
 
-Answer:""")
+DETAILED ANSWER:""")
         
         chain = prompt | self.llm
         response = chain.invoke({"context": context, "question": question})

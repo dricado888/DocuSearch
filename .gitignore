@@ -25,6 +25,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Claude Code local settings (may contain API keys)
+.claude/settings.local.json
+
 # Temporary files
 *.tmp
 *.temp

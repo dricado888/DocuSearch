@@ -35,16 +35,25 @@ function App() {
       setError('Please enter your API key')
       return
     }
-    
+
     setIsLoading(true)
-    setLoadingMessage('Initializing AI system...')
+    setLoadingMessage('Validating API key...')
     setError('')
-    
+
     try {
       await axios.post(`${API_URL}/init`, { api_key: apiKey })
       setIsInitialized(true)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to initialize')
+      // Handle API key validation errors with helpful messages
+      const errorDetail = err.response?.data?.detail || 'Failed to initialize'
+
+      if (err.response?.status === 401) {
+        setError(`❌ ${errorDetail}`)
+      } else if (err.response?.status === 403) {
+        setError(`❌ ${errorDetail}`)
+      } else {
+        setError(`❌ ${errorDetail}`)
+      }
     } finally {
       setIsLoading(false)
       setLoadingMessage('')
@@ -167,90 +176,106 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-900">
-      {/* Animated background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-accent-purple/20 rounded-full blur-[100px]" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent-blue/20 rounded-full blur-[100px]" />
-      </div>
-
+    <div className="min-h-screen bg-brand-grey-50">
       {/* Main content */}
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
-        
-        {/* Header */}
-        <header className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-accent-purple to-accent-blue">
-              <Search className="w-8 h-8 text-white" />
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+
+        {/* Header - clean, professional */}
+        <header className="mb-12">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-brand-orange-500 flex items-center justify-center">
+                <Search className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-serif font-bold text-brand-black tracking-tight">
+                DocuSearch Pro
+              </h1>
             </div>
-            <h1 className="text-5xl font-extrabold gradient-text">DocuSearch</h1>
+            {isInitialized && (
+              <button
+                onClick={handleReset}
+                className="text-sm text-brand-grey-600 hover:text-brand-grey-900 transition-colors"
+              >
+                Reset System
+              </button>
+            )}
           </div>
-          <p className="text-gray-400 text-lg">
-            AI-Powered Document Intelligence • Upload • Ask • Discover
+          <p className="text-brand-grey-600 text-base font-sans ml-13">
+            Professional Document Analysis & Intelligence
           </p>
         </header>
 
-        {/* Error display */}
+        {/* Error display - professional alert */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400" />
-            <span className="text-red-300">{error}</span>
-            <button onClick={() => setError('')} className="ml-auto">
-              <X className="w-4 h-4 text-red-400 hover:text-red-300" />
+          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <span className="text-red-800 font-sans text-sm flex-1">{error}</span>
+            <button onClick={() => setError('')} className="ml-auto hover:bg-red-100 rounded p-1 transition-colors">
+              <X className="w-4 h-4 text-red-600" />
             </button>
           </div>
         )}
 
-        {/* Loading overlay */}
+        {/* Loading overlay - minimal professional */}
         {isLoading && (
-          <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="text-center">
-              <Loader2 className="w-12 h-12 text-accent-purple animate-spin mx-auto mb-4" />
-              <p className="text-gray-300 text-lg">{loadingMessage}</p>
+              <Loader2 className="w-12 h-12 text-brand-orange-500 animate-spin mx-auto mb-4" />
+              <p className="text-brand-grey-700 text-base font-sans font-medium">{loadingMessage}</p>
             </div>
           </div>
         )}
 
-        {/* Step 1: API Key */}
+        {/* API Initialization - Clean professional card */}
         {!isInitialized ? (
-          <div className="max-w-md mx-auto">
-            <div className="glass rounded-2xl p-8">
+          <div className="max-w-lg mx-auto mt-16">
+            <div className="bg-white border border-brand-grey-200 rounded-lg shadow-lg p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-accent-purple/20">
-                  <Settings className="w-5 h-5 text-accent-purple" />
+                <div className="p-2.5 rounded-lg bg-brand-orange-50 border border-brand-orange-200">
+                  <Settings className="w-5 h-5 text-brand-orange-600" />
                 </div>
-                <h2 className="text-xl font-semibold">Get Started</h2>
+                <h2 className="text-2xl font-serif font-semibold text-brand-black">
+                  Initialize System
+                </h2>
               </div>
-              
-              <p className="text-gray-400 mb-6">
-                Enter your groq API key to initialize the AI system.
+
+              <p className="text-brand-grey-600 mb-6 font-sans leading-relaxed">
+                Enter your Groq API key to enable AI-powered document analysis.
               </p>
-              
+
               <Input
-  type="password"
-  value={apiKey}
-  onChange={(e) => setApiKey(e.target.value)}
-  placeholder="gsk_..."
-  className="mb-4"
-/>
-              
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="gsk_..."
+                className="mb-4 font-mono text-sm"
+                onKeyPress={(e) => e.key === 'Enter' && handleInitialize()}
+              />
+
               <button
                 onClick={handleInitialize}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-accent-purple to-accent-blue
-                         font-semibold hover:opacity-90 transition-opacity flex items-center 
-                         justify-center gap-2"
+                className="w-full py-3 px-4 rounded-lg bg-brand-orange-500 text-white
+                         font-sans font-semibold hover:bg-brand-orange-600
+                         transition-colors flex items-center justify-center gap-2
+                         shadow-sm hover:shadow-md"
               >
                 <Zap className="w-5 h-5" />
-                Initialize
+                Initialize System
               </button>
-              
-              <p className="text-gray-500 text-sm mt-4 text-center">
-                Get your API key from{' '}
-                <a href="https://console.anthropic.com" target="_blank" 
-                   className="text-accent-purple hover:underline">
-                  console.anthropic.com
-                </a>
-              </p>
+
+              <div className="mt-6 pt-6 border-t border-brand-grey-200">
+                <p className="text-brand-grey-500 text-sm font-sans text-center">
+                  Get your API key from{' '}
+                  <a
+                    href="https://console.groq.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-orange-500 hover:text-brand-orange-600 font-medium transition-colors"
+                  >
+                    console.groq.com
+                  </a>
+                </p>
+              </div>
             </div>
           </div>
         ) : (
@@ -258,37 +283,28 @@ function App() {
           <div className="grid lg:grid-cols-3 gap-6">
             
             {/* Left panel - Upload */}
-            <div className="lg:col-span-1 space-y-6">
-              
-              {/* Upload card */}
-              <div className="glass rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-accent-blue/20">
-                      <Upload className="w-5 h-5 text-accent-blue" />
-                    </div>
-                    <h2 className="text-lg font-semibold">Documents</h2>
+            <div className="lg:col-span-1 space-y-5">
+
+              {/* Upload card - clean professional */}
+              <div className="bg-white border border-brand-grey-200 rounded-lg shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 rounded-lg bg-brand-orange-50 border border-brand-orange-100">
+                    <Upload className="w-5 h-5 text-brand-orange-600" />
                   </div>
-                  <button
-                    onClick={handleReset}
-                    className="text-gray-500 hover:text-red-400 transition-colors"
-                    title="Reset"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <h2 className="text-xl font-serif font-semibold text-brand-black">Documents</h2>
                 </div>
-                
-                {/* Drop zone */}
+
+                {/* Drop zone - minimal professional */}
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-700 rounded-xl p-8 
-                           text-center cursor-pointer hover:border-accent-purple/50 
-                           transition-colors group"
+                  className="border-2 border-dashed border-brand-grey-300 rounded-lg p-8
+                           text-center cursor-pointer hover:border-brand-orange-400 hover:bg-brand-orange-50/30
+                           transition-all group"
                 >
-                  <FileText className="w-10 h-10 text-gray-600 mx-auto mb-3 
-                                      group-hover:text-accent-purple transition-colors" />
-                  <p className="text-gray-400 text-sm">
-                    Click to select PDFs
+                  <FileText className="w-10 h-10 text-brand-grey-400 mx-auto mb-3
+                                      group-hover:text-brand-orange-500 transition-colors" />
+                  <p className="text-brand-grey-600 text-sm font-sans">
+                    Click to select PDF documents
                   </p>
                   <input
                     ref={fileInputRef}
@@ -299,28 +315,29 @@ function App() {
                     className="hidden"
                   />
                 </div>
-                
-                {/* Selected files */}
+
+                {/* Selected files - clean list */}
                 {files.length > 0 && (
                   <div className="mt-4 space-y-2">
                     {files.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 
-                                            rounded-lg bg-dark-700">
-                        <div className="flex items-center gap-2 truncate">
-                          <File className="w-4 h-4 text-accent-purple flex-shrink-0" />
-                          <span className="text-sm truncate">{file.name}</span>
+                      <div key={i} className="flex items-center justify-between p-3
+                                            rounded-md bg-brand-grey-50 border border-brand-grey-200
+                                            hover:border-brand-grey-300 transition-colors">
+                        <div className="flex items-center gap-2 truncate flex-1">
+                          <File className="w-4 h-4 text-brand-orange-500 flex-shrink-0" />
+                          <span className="text-sm font-sans text-brand-grey-700 truncate">{file.name}</span>
                         </div>
-                        <button onClick={() => removeFile(i)}>
-                          <X className="w-4 h-4 text-gray-500 hover:text-red-400" />
+                        <button onClick={() => removeFile(i)} className="hover:bg-red-50 rounded p-1 transition-colors">
+                          <X className="w-4 h-4 text-brand-grey-500 hover:text-red-600" />
                         </button>
                       </div>
                     ))}
-                    
+
                     <button
                       onClick={handleUpload}
-                      className="w-full py-2.5 rounded-xl bg-accent-blue/20 text-accent-blue
-                               font-medium hover:bg-accent-blue/30 transition-colors 
-                               flex items-center justify-center gap-2 mt-3"
+                      className="w-full py-2.5 rounded-lg bg-brand-orange-500 text-white
+                               font-sans font-medium hover:bg-brand-orange-600 transition-colors
+                               flex items-center justify-center gap-2 mt-3 shadow-sm"
                     >
                       <Upload className="w-4 h-4" />
                       Process {files.length} file{files.length > 1 ? 's' : ''}
@@ -329,87 +346,85 @@ function App() {
                 )}
               </div>
               
-              {/* Uploaded files */}
+              {/* Indexed files */}
               {uploadedFiles.length > 0 && (
-                <div className="glass rounded-2xl p-6">
+                <div className="bg-white border border-brand-grey-200 rounded-lg shadow-sm p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-lg bg-green-500/20">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    <div className="p-2 rounded-lg bg-green-50 border border-green-200">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
                     </div>
-                    <h2 className="text-lg font-semibold">Indexed</h2>
+                    <h2 className="text-xl font-serif font-semibold text-brand-black">Indexed</h2>
                   </div>
 
                   <div className="space-y-2">
                     {uploadedFiles.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between gap-2 p-2 rounded-lg
-                                            bg-dark-700/50 text-sm group">
+                      <div key={i} className="flex items-center justify-between gap-2 p-2.5 rounded-md
+                                            bg-brand-grey-50 border border-brand-grey-200 text-sm group hover:border-brand-grey-300 transition-colors">
                         <div className="flex items-center gap-2 truncate flex-1">
-                          <BookOpen className="w-4 h-4 text-green-400 flex-shrink-0" />
-                          <span className="truncate">{file}</span>
+                          <BookOpen className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          <span className="truncate font-sans text-brand-grey-700">{file}</span>
                         </div>
                         <button
                           onClick={() => removeUploadedFile(file)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity
-                                   hover:text-red-400 text-gray-500"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 rounded p-1"
                           title="Remove file"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-4 h-4 text-brand-grey-500 hover:text-red-600" />
                         </button>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-800">
+                  <div className="mt-4 pt-4 border-t border-brand-grey-200">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">Total chunks</span>
-                      <span className="text-accent-purple font-semibold">{totalChunks}</span>
+                      <span className="text-brand-grey-600 font-sans">Total chunks</span>
+                      <span className="text-brand-orange-600 font-mono font-semibold">{totalChunks}</span>
                     </div>
                   </div>
                 </div>
               )}
-              
+
               {/* Search depth */}
-              <div className="glass rounded-2xl p-6">
+              <div className="bg-white border border-brand-grey-200 rounded-lg shadow-sm p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-accent-pink/20">
-                    <Sparkles className="w-5 h-5 text-accent-pink" />
+                  <div className="p-2 rounded-lg bg-brand-grey-100 border border-brand-grey-200">
+                    <Sparkles className="w-5 h-5 text-brand-grey-700" />
                   </div>
-                  <h2 className="text-lg font-semibold">Search Depth</h2>
+                  <h2 className="text-xl font-serif font-semibold text-brand-black">Search Depth</h2>
                 </div>
-                
+
                 <input
                   type="range"
                   min="2"
                   max="8"
                   value={searchDepth}
                   onChange={(e) => setSearchDepth(parseInt(e.target.value))}
-                  className="w-full h-2 bg-dark-700 rounded-lg appearance-none cursor-pointer
+                  className="w-full h-2 bg-brand-grey-200 rounded-lg appearance-none cursor-pointer
                            [&::-webkit-slider-thumb]:appearance-none
                            [&::-webkit-slider-thumb]:w-4
                            [&::-webkit-slider-thumb]:h-4
-                           [&::-webkit-slider-thumb]:bg-accent-purple
+                           [&::-webkit-slider-thumb]:bg-brand-orange-500
                            [&::-webkit-slider-thumb]:rounded-full
-                           [&::-webkit-slider-thumb]:cursor-pointer"
+                           [&::-webkit-slider-thumb]:cursor-pointer
+                           [&::-webkit-slider-thumb]:shadow-sm"
                 />
-                
-                <div className="flex justify-between mt-2 text-sm">
-                  <span className="text-gray-500">Quick</span>
-                  <span className="text-accent-purple font-medium">
-                    {depthLabels[searchDepth]}
-                  </span>
-                  <span className="text-gray-500">Deep</span>
+
+                <div className="flex justify-between mt-3 text-sm">
+                  <span className="text-brand-grey-500 font-sans">Quick</span>
+                  <span className="text-brand-orange-600 font-sans font-semibold">{depthLabels[searchDepth]}</span>
+                  <span className="text-brand-grey-500 font-sans">Deep</span>
                 </div>
               </div>
             </div>
-            
+
             {/* Right panel - Q&A */}
             <div className="lg:col-span-2">
-              <div className="glass rounded-2xl p-6 h-full flex flex-col">
+              <div className="bg-white border border-brand-grey-200 rounded-lg shadow-sm p-6 h-full flex flex-col">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-accent-purple/20 to-accent-blue/20">
-                    <Search className="w-5 h-5 text-accent-purple" />
+                  <div className="p-2 rounded-lg bg-brand-orange-50 border border-brand-orange-100">
+                    <Search className="w-5 h-5 text-brand-orange-600" />
                   </div>
-                  <h2 className="text-lg font-semibold">Ask Questions</h2>
+                  <h2 className="text-2xl font-serif font-semibold text-brand-black">Ask Questions</h2>
                 </div>
 
                 {/* Show question input only if files are uploaded */}
@@ -423,17 +438,18 @@ function App() {
                           value={question}
                           onChange={(e) => setQuestion(e.target.value)}
                           placeholder="What would you like to know about your documents?"
-                          className="w-full px-5 py-4 pr-14 rounded-xl bg-dark-700 border border-gray-700
-                                   focus:border-accent-purple focus:outline-none focus:ring-2
-                                   focus:ring-accent-purple/20 transition-all"
+                          className="w-full px-5 py-4 pr-14 rounded-lg bg-white border border-brand-grey-300
+                                   focus:border-brand-orange-400 focus:outline-none focus:ring-2
+                                   focus:ring-brand-orange-100 transition-all font-sans text-brand-grey-900
+                                   placeholder:text-brand-grey-400"
                         />
                         <button
                           type="submit"
                           disabled={!question.trim()}
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-lg
-                                   bg-gradient-to-r from-accent-purple to-accent-blue
+                                   bg-brand-orange-500 text-white
                                    disabled:opacity-30 disabled:cursor-not-allowed
-                                   hover:opacity-90 transition-opacity"
+                                   hover:bg-brand-orange-600 transition-colors shadow-sm"
                         >
                           <Send className="w-5 h-5" />
                         </button>
@@ -443,9 +459,9 @@ function App() {
                     {/* Chat history */}
                     <div className="flex-1 overflow-y-auto space-y-4">
                       {chatHistory.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Search className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-                          <p className="text-gray-500">Ask a question to get started</p>
+                        <div className="text-center py-16">
+                          <Search className="w-16 h-16 text-brand-grey-300 mx-auto mb-4" />
+                          <p className="text-brand-grey-500 font-sans">Ask a question to get started</p>
                         </div>
                       ) : (
                         chatHistory.map((item, i) => (
@@ -455,17 +471,16 @@ function App() {
                     </div>
                   </>
                 ) : (
-                  /* Placeholder when no files uploaded */
+                  // Placeholder when no files uploaded
                   <div className="flex-1 flex items-center justify-center">
                     <div className="text-center max-w-md">
-                      <div className="p-4 rounded-2xl bg-gradient-to-br from-accent-purple/10 to-accent-blue/10
-                                    border-2 border-dashed border-gray-700 mb-4 inline-block">
-                        <Upload className="w-16 h-16 text-gray-600 mx-auto" />
+                      <div className="p-6 rounded-lg bg-brand-grey-50 border-2 border-dashed border-brand-grey-300 mb-4 inline-block">
+                        <Upload className="w-16 h-16 text-brand-grey-400 mx-auto" />
                       </div>
-                      <h3 className="text-xl font-semibold mb-2 text-gray-300">
+                      <h3 className="text-xl font-serif font-semibold mb-2 text-brand-grey-700">
                         No Documents Yet
                       </h3>
-                      <p className="text-gray-500">
+                      <p className="text-brand-grey-500 font-sans">
                         Upload PDF files to start asking questions about your documents
                       </p>
                     </div>
@@ -477,64 +492,85 @@ function App() {
         )}
         
         {/* Footer */}
-        <footer className="text-center mt-12 text-gray-500 text-sm">
-          <p className="mt-1">Swastik Sahoo • ASU - Computer Science</p>
+        <footer className="text-center mt-16 pt-8 border-t border-brand-grey-200">
+          <p className="text-brand-grey-500 font-sans text-sm">
+            Built by <span className="font-semibold text-brand-grey-700">Swastik Sahoo</span>
+            {' • '}
+            <span className="text-brand-grey-400">Arizona State University</span>
+            {' • '}
+            <span className="text-brand-grey-400">Computer Science</span>
+          </p>
         </footer>
       </div>
     </div>
   )
 }
 
-// Chat item component
+// Chat item component - Professional Q&A display
 function ChatItem({ item }) {
   const [expanded, setExpanded] = useState(true)
-  
+
   return (
-    <div className="rounded-xl bg-dark-700/50 overflow-hidden">
-      {/* Question */}
+    <div className="rounded-lg border border-brand-grey-200 bg-white shadow-sm overflow-hidden
+                    hover:border-brand-grey-300 hover:shadow-md transition-all">
+      {/* Question Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-5 py-4 flex items-center justify-between hover:bg-dark-700 transition-colors"
+        className="w-full px-6 py-4 flex items-center justify-between
+                   hover:bg-brand-grey-50 transition-colors group"
       >
-        <div className="flex items-center gap-3">
-          <div className="p-1.5 rounded-lg bg-accent-purple/20">
-            <Search className="w-4 h-4 text-accent-purple" />
+        <div className="flex items-center gap-3 flex-1">
+          <div className="p-2 rounded-lg bg-brand-orange-50 border border-brand-orange-100
+                         group-hover:bg-brand-orange-100 transition-colors">
+            <Search className="w-4 h-4 text-brand-orange-600" />
           </div>
-          <span className="font-medium text-left">{item.question}</span>
+          <span className="font-sans font-medium text-brand-black text-left">
+            {item.question}
+          </span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-gray-500 text-sm">{item.timestamp}</span>
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <div className="flex items-center gap-3 ml-4">
+          <span className="text-brand-grey-400 text-sm font-mono">{item.timestamp}</span>
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-brand-grey-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-brand-grey-400" />
+          )}
         </div>
       </button>
-      
-      {/* Answer */}
+
+      {/* Answer Section */}
       {expanded && (
-        <div className="px-5 pb-5">
-          <div className="p-4 rounded-xl bg-gradient-to-br from-accent-purple/5 to-accent-blue/5 
-                        border border-accent-purple/10 mb-4">
-            <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">
+        <div className="px-6 pb-5 bg-brand-grey-50/50">
+          <div className="p-5 rounded-lg bg-white border border-brand-grey-200 mb-4">
+            <p className="text-technical text-brand-grey-800 leading-relaxed whitespace-pre-wrap">
               {item.answer}
             </p>
           </div>
-          
+
           {/* Sources */}
-          <div className="space-y-2">
-            <p className="text-sm text-gray-400 font-medium">
-              Sources ({item.sources.length})
-            </p>
-            {item.sources.map((source, j) => (
-              <div key={j} className="p-3 rounded-lg bg-dark-800 text-sm">
-                <div className="flex items-center gap-2 text-accent-blue font-medium mb-1">
-                  <FileText className="w-3.5 h-3.5" />
-                  {source.paper} • Page {source.page}
+          {item.sources && item.sources.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-brand-grey-600 font-sans font-semibold mb-3">
+                Sources ({item.sources.length})
+              </p>
+              {item.sources.map((source, j) => (
+                <div key={j} className="p-3.5 rounded-lg bg-white border border-brand-grey-200
+                                       hover:border-brand-orange-200 hover:bg-brand-orange-50/30
+                                       transition-all">
+                  <div className="flex items-center gap-2 text-brand-orange-600 font-sans
+                                font-medium mb-2 text-sm">
+                    <FileText className="w-4 h-4" />
+                    <span>{source.paper}</span>
+                    <span className="text-brand-grey-400">•</span>
+                    <span className="text-brand-grey-600">Page {source.page}</span>
+                  </div>
+                  <p className="text-brand-grey-600 text-xs font-sans leading-relaxed line-clamp-2">
+                    {source.content_preview}
+                  </p>
                 </div>
-                <p className="text-gray-400 text-xs line-clamp-2">
-                  {source.content_preview}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

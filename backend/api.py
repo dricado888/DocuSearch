@@ -2,6 +2,7 @@
 DocuSearch API
 FastAPI backend that exposes RAG functionality via HTTP endpoints
 """
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -59,14 +60,43 @@ async def root():
 @app.post("/init")
 async def initialize(request: InitRequest):
     global rag_instance, loaded_files
-    
+
     try:
+        # Create RAG instance
         rag_instance = PaperQA(
             groq_api_key=request.api_key,
             persist_directory=tempfile.mkdtemp()
         )
+
+        # VALIDATE API KEY by making a test call
+        try:
+            test_result = rag_instance.llm.invoke("test")
+            print(f"API key validated successfully: {test_result.content[:50]}")
+        except Exception as key_error:
+            rag_instance = None
+            error_msg = str(key_error)
+
+            # Check for specific API key errors
+            if "401" in error_msg or "invalid_api_key" in error_msg or "Invalid API Key" in error_msg:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid Groq API key. Please check your API key at https://console.groq.com/keys"
+                )
+            elif "403" in error_msg or "forbidden" in error_msg:
+                raise HTTPException(
+                    status_code=403,
+                    detail="API key access denied. Your key may be expired or disabled."
+                )
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to validate API key: {error_msg}"
+                )
+
         loaded_files = []
-        return {"status": "success", "message": "RAG system initialized"}
+        return {"status": "success", "message": "RAG system initialized with valid API key"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to initialize: {str(e)}")
 
