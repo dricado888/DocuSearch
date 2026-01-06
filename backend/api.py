@@ -23,8 +23,16 @@ from slowapi.errors import RateLimitExceeded
 import tempfile
 import os
 import shutil
-import magic  # File type detection
 import re
+
+# Try to import magic (file type detection)
+# Fallback to basic validation if not available
+try:
+    import magic
+    MAGIC_AVAILABLE = True
+except ImportError:
+    MAGIC_AVAILABLE = False
+    print("⚠️  Warning: python-magic not available. Using basic file validation.")
 
 from rag_engine import PaperQA
 
@@ -292,7 +300,7 @@ class RemoveFileRequest(BaseModel):
     File removal request
 
     Security validations:
-    - Path traversal prevention (../, /, \)
+    - Path traversal prevention (../, /, \\)
     - Extension validation (.pdf only)
     - Length limits
     - Filename sanitization
@@ -310,7 +318,7 @@ class RemoveFileRequest(BaseModel):
         Validate filename for security
 
         Checks:
-        1. No path traversal attempts (../, /, \)
+        1. No path traversal attempts (../, /, \\)
         2. Must be .pdf extension
         3. No null bytes or control characters
 
@@ -438,21 +446,30 @@ async def validate_upload_file(file: UploadFile) -> None:
     file_content = await file.read(2048)  # Read first 2KB
     file.file.seek(0)  # Reset for later processing
 
-    try:
-        # python-magic library checks file signature
-        mime = magic.from_buffer(file_content, mime=True)
+    if MAGIC_AVAILABLE:
+        try:
+            # python-magic library checks file signature
+            mime = magic.from_buffer(file_content, mime=True)
 
-        if mime not in ALLOWED_MIME_TYPES:
+            if mime not in ALLOWED_MIME_TYPES:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid file content. Expected PDF, got: {mime}"
+                )
+        except Exception as e:
+            # If magic fails, reject (fail secure)
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid file content. Expected PDF, got: {mime}"
+                detail=f"Failed to validate file type for {filename}"
             )
-    except Exception as e:
-        # If magic fails, reject (fail secure)
-        raise HTTPException(
-            status_code=400,
-            detail=f"Failed to validate file type for {filename}"
-        )
+    else:
+        # Fallback: Check PDF magic number manually
+        # PDF files start with "%PDF-" (bytes: 0x25 0x50 0x44 0x46 0x2D)
+        if not file_content.startswith(b'%PDF-'):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid file content. File does not appear to be a PDF"
+            )
 
 
 def sanitize_filename(filename: str) -> str:
@@ -847,3 +864,12 @@ async def reset(request: Request):
         print(f"Failed to reset system: {str(e)}")
         # Still return success (fail open for reset)
         return {"status": "success", "message": "System reset"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Starting DocuSearch API with security hardening...")
+    print("📍 Rate limiting enabled")
+    print("🔒 File validation enabled")
+    print("🛡️  Security headers enabled")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
