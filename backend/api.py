@@ -32,9 +32,11 @@ try:
     MAGIC_AVAILABLE = True
 except ImportError:
     MAGIC_AVAILABLE = False
-    print("⚠️  Warning: python-magic not available. Using basic file validation.")
+    print("Warning: python-magic not available. Using basic file validation.")
 
-from rag_engine import PaperQA
+# Don't import PaperQA at startup - it's slow!
+# Import it only when user clicks "Initialize" (lazy loading)
+PaperQA = None
 
 # ============================================
 # SECURITY CONFIGURATION
@@ -545,9 +547,14 @@ async def initialize(request: Request, init_request: InitRequest):
         masked_key = f"{init_request.api_key[:8]}...{init_request.api_key[-4:]}" if len(init_request.api_key) > 12 else "***"
         print(f"🔑 Validating API key: {masked_key}")
 
+        # LAZY LOADING: Import PaperQA only when needed (first time user initializes)
+        # This makes backend startup instant!
+        print("📦 Loading AI models (first time: 1-2 min, then instant)...")
+        from rag_engine import PaperQA as PaperQAClass
+
         # Create RAG instance
         # init_request.api_key already validated by Pydantic
-        rag_instance = PaperQA(
+        rag_instance = PaperQAClass(
             groq_api_key=init_request.api_key,
             persist_directory=tempfile.mkdtemp()
         )
@@ -875,8 +882,10 @@ async def reset(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting DocuSearch API with security hardening...")
-    print("📍 Rate limiting enabled")
-    print("🔒 File validation enabled")
-    print("🛡️  Security headers enabled")
+    print("="*60)
+    print("Starting DocuSearch API with security hardening...")
+    print("Rate limiting: enabled")
+    print("File validation: enabled")
+    print("Security headers: enabled")
+    print("="*60)
     uvicorn.run(app, host="0.0.0.0", port=8000)

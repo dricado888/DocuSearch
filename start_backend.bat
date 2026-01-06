@@ -1,4 +1,5 @@
 @echo off
+echo Starting backend...
 cd backend
-python quick_start.py
+python api.py
 pause
