@@ -541,6 +541,10 @@ async def initialize(request: Request, init_request: InitRequest):
     global rag_instance, loaded_files
 
     try:
+        # Log API key validation attempt (masked for security)
+        masked_key = f"{init_request.api_key[:8]}...{init_request.api_key[-4:]}" if len(init_request.api_key) > 12 else "***"
+        print(f"🔑 Validating API key: {masked_key}")
+
         # Create RAG instance
         # init_request.api_key already validated by Pydantic
         rag_instance = PaperQA(
@@ -550,11 +554,13 @@ async def initialize(request: Request, init_request: InitRequest):
 
         # VALIDATE API KEY by making a test call
         try:
+            print("📡 Making test call to Groq API...")
             test_result = rag_instance.llm.invoke("test")
-            print(f"API key validated successfully: {test_result.content[:50]}")
+            print(f"✅ API key validated successfully: {test_result.content[:50]}")
         except Exception as key_error:
             rag_instance = None
             error_msg = str(key_error)
+            print(f"❌ API key validation failed: {error_msg}")
 
             # Check for specific API key errors
             if "401" in error_msg or "invalid_api_key" in error_msg or "Invalid API Key" in error_msg:
@@ -568,9 +574,10 @@ async def initialize(request: Request, init_request: InitRequest):
                     detail="API key access denied. Your key may be expired or disabled."
                 )
             else:
+                # Return more detailed error for debugging
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to validate API key: {error_msg}"
+                    detail=f"API validation error: {error_msg[:200]}"
                 )
 
         loaded_files = []
