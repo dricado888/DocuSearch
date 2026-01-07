@@ -46,28 +46,28 @@ cd frontend
 npm install
 ```
 
-### 3. Create .env File
-Create `backend/.env` with your Groq API key:
-```
-GROQ_API_KEY=gsk_your_key_here
+### 3. Configure API Key
+Copy the example file and add your Groq API key:
+```bash
+cd backend
+copy .env.example .env
+# Edit .env and replace gsk_your_api_key_here with your actual key
 ```
 
-**⚠️ IMPORTANT**: Never commit the `.env` file to Git!
+Get your free API key from: https://console.groq.com/keys
+
+**⚠️ IMPORTANT**: Never commit the `.env` file to Git! (it's already in .gitignore)
 
 ---
 
 ## Using the Application
 
-### Step 1: Initialize
-1. Enter your Groq API key
-2. Click "Initialize System"
-
-### Step 2: Upload PDFs
+### Step 1: Upload PDFs
 1. Click "Upload Files"
 2. Select one or more PDF files (max 10MB each, 50MB total)
 3. Wait for processing
 
-### Step 3: Ask Questions
+### Step 2: Ask Questions
 1. Type your question in the text box
 2. Adjust number of sources (1-10)
 3. Click "Ask Question"
