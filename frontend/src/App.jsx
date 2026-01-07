@@ -158,14 +158,12 @@ function App() {
                 DocuSearch Pro
               </h1>
             </div>
-            {isInitialized && (
-              <button
-                onClick={handleReset}
-                className="text-sm text-brand-grey-600 hover:text-brand-grey-900 transition-colors"
-              >
-                Reset System
-              </button>
-            )}
+            <button
+              onClick={handleReset}
+              className="text-sm text-brand-grey-600 hover:text-brand-grey-900 transition-colors"
+            >
+              Reset System
+            </button>
           </div>
           <p className="text-brand-grey-600 text-base font-sans ml-13">
             Professional Document Analysis & Intelligence
