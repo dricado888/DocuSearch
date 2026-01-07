@@ -13,9 +13,7 @@ import { Badge } from "@/components/ui/badge"
 const API_URL = 'http://localhost:8000'
 
 function App() {
-  // State management
-  const [apiKey, setApiKey] = useState('')
-  const [isInitialized, setIsInitialized] = useState(false)
+  // State management (API key removed - now in backend .env)
   const [files, setFiles] = useState([])
   const [uploadedFiles, setUploadedFiles] = useState([])
   const [totalChunks, setTotalChunks] = useState(0)
@@ -26,39 +24,8 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState('')
   const [error, setError] = useState('')
   const [showSettings, setShowSettings] = useState(false)
-  
+
   const fileInputRef = useRef(null)
-
-  // Initialize the RAG system
-  const handleInitialize = async () => {
-    if (!apiKey.trim()) {
-      setError('Please enter your API key')
-      return
-    }
-
-    setIsLoading(true)
-    setLoadingMessage('Validating API key...')
-    setError('')
-
-    try {
-      await axios.post(`${API_URL}/init`, { api_key: apiKey })
-      setIsInitialized(true)
-    } catch (err) {
-      // Handle API key validation errors with helpful messages
-      const errorDetail = err.response?.data?.detail || 'Failed to initialize'
-
-      if (err.response?.status === 401) {
-        setError(`❌ ${errorDetail}`)
-      } else if (err.response?.status === 403) {
-        setError(`❌ ${errorDetail}`)
-      } else {
-        setError(`❌ ${errorDetail}`)
-      }
-    } finally {
-      setIsLoading(false)
-      setLoadingMessage('')
-    }
-  }
 
   // Handle file selection
   const handleFileSelect = (e) => {
@@ -226,61 +193,8 @@ function App() {
           </div>
         )}
 
-        {/* API Initialization - Clean professional card */}
-        {!isInitialized ? (
-          <div className="max-w-lg mx-auto mt-16">
-            <div className="bg-white border border-brand-grey-200 rounded-lg shadow-lg p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 rounded-lg bg-brand-orange-50 border border-brand-orange-200">
-                  <Settings className="w-5 h-5 text-brand-orange-600" />
-                </div>
-                <h2 className="text-2xl font-serif font-semibold text-brand-black">
-                  Initialize System
-                </h2>
-              </div>
-
-              <p className="text-brand-grey-600 mb-6 font-sans leading-relaxed">
-                Enter your Groq API key to enable AI-powered document analysis.
-              </p>
-
-              <Input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="gsk_..."
-                className="mb-4 font-mono text-sm"
-                onKeyPress={(e) => e.key === 'Enter' && handleInitialize()}
-              />
-
-              <button
-                onClick={handleInitialize}
-                className="w-full py-3 px-4 rounded-lg bg-brand-orange-500 text-white
-                         font-sans font-semibold hover:bg-brand-orange-600
-                         transition-colors flex items-center justify-center gap-2
-                         shadow-sm hover:shadow-md"
-              >
-                <Zap className="w-5 h-5" />
-                Initialize System
-              </button>
-
-              <div className="mt-6 pt-6 border-t border-brand-grey-200">
-                <p className="text-brand-grey-500 text-sm font-sans text-center">
-                  Get your API key from{' '}
-                  <a
-                    href="https://console.groq.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-brand-orange-500 hover:text-brand-orange-600 font-medium transition-colors"
-                  >
-                    console.groq.com
-                  </a>
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Main interface */
-          <div className="grid lg:grid-cols-3 gap-6">
+        {/* No initialization required - just start using! */}
+        <div className="grid lg:grid-cols-3 gap-6">
             
             {/* Left panel - Upload */}
             <div className="lg:col-span-1 space-y-5">
@@ -489,8 +403,7 @@ function App() {
               </div>
             </div>
           </div>
-        )}
-        
+
         {/* Footer */}
         <footer className="text-center mt-16 pt-8 border-t border-brand-grey-200">
           <p className="text-brand-grey-500 font-sans text-sm">

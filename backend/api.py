@@ -42,6 +42,22 @@ PaperQA = None
 # SECURITY CONFIGURATION
 # ============================================
 
+# Load API key from .env file (secure - not committed to git)
+# The .env file contains: GROQ_API_KEY=gsk_your_key_here
+from dotenv import load_dotenv
+load_dotenv()
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+if not GROQ_API_KEY:
+    print("=" * 60)
+    print("ERROR: GROQ_API_KEY not found!")
+    print("=" * 60)
+    print("Create a file: backend/.env")
+    print("Add this line: GROQ_API_KEY=gsk_your_key_here")
+    print("=" * 60)
+    import sys
+    sys.exit(1)
+
 # File upload security limits
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB per file
 MAX_TOTAL_UPLOAD = 50 * 1024 * 1024  # 50MB total per request
@@ -187,8 +203,22 @@ app.add_middleware(
     max_age=600,  # Cache preflight for 10 minutes (performance)
 )
 
+# Global state
 rag_instance: Optional[PaperQA] = None
 loaded_files: List[str] = []
+
+def get_rag_instance():
+    """Lazy load RAG instance on first use (auto-initialized with API key from .env)"""
+    global rag_instance
+    if rag_instance is None:
+        print("📦 Initializing RAG system (first use - may take 1-2 min)...")
+        from rag_engine import PaperQA as PaperQAClass
+        rag_instance = PaperQAClass(
+            groq_api_key=GROQ_API_KEY,
+            persist_directory=tempfile.mkdtemp()
+        )
+        print("✅ RAG system ready!")
+    return rag_instance
 
 # ============================================
 # PYDANTIC MODELS WITH VALIDATION
@@ -199,46 +229,7 @@ loaded_files: List[str] = []
 # Alternative: Marshmallow (not FastAPI native)
 # Chosen: Pydantic (built into FastAPI, type-safe)
 
-class InitRequest(BaseModel):
-    """
-    API initialization request
-
-    Security validations:
-    - API key length check (prevent empty or malformed keys)
-    - Format validation (Groq keys start with 'gsk_')
-    - Whitespace stripping (prevent accidental spaces)
-    """
-    api_key: str = Field(
-        ...,  # Required field
-        min_length=20,  # Groq API keys are long
-        max_length=500,  # Prevent huge payloads
-        description="Groq API key for LLM access"
-    )
-
-    @validator('api_key')
-    def validate_api_key_format(cls, v):
-        """
-        Validate API key format and sanitize
-
-        Checks:
-        1. Starts with 'gsk_' (Groq format)
-        2. No leading/trailing whitespace
-        3. No obviously invalid characters
-
-        Why: Fail fast before expensive API call
-        """
-        # Strip whitespace
-        v = v.strip()
-
-        # Check Groq key format
-        if not v.startswith('gsk_'):
-            raise ValueError('Invalid API key format. Groq keys start with gsk_')
-
-        # Check for control characters or null bytes (security)
-        if any(ord(c) < 32 or ord(c) == 127 for c in v):
-            raise ValueError('API key contains invalid characters')
-
-        return v
+# InitRequest removed - API key now comes from .env file
 
 
 class QueryRequest(BaseModel):
@@ -517,84 +508,7 @@ async def root(request: Request):
     return {"status": "ok", "message": "DocuSearch API is running"}
 
 
-@app.post("/init")
-@limiter.limit(RATE_LIMITS["init"])
-async def initialize(request: Request, init_request: InitRequest):
-    """
-    Initialize RAG system with API key validation
-
-    Rate limit: 5/minute
-    Why: Expensive operation (makes API call to Groq)
-    Security: Pydantic validates API key format before processing
-
-    Flow:
-    1. Pydantic validates API key format (gsk_ prefix, no control chars)
-    2. Create RAG instance with validated key
-    3. Test API key with actual Groq API call
-    4. Return success or specific error codes
-
-    Returns:
-        200: Success - API key valid
-        401: Invalid API key
-        403: API key expired/disabled
-        429: Rate limit exceeded
-        500: Server error
-    """
-    global rag_instance, loaded_files
-
-    try:
-        # Log API key validation attempt (masked for security)
-        masked_key = f"{init_request.api_key[:8]}...{init_request.api_key[-4:]}" if len(init_request.api_key) > 12 else "***"
-        print(f"🔑 Validating API key: {masked_key}")
-
-        # LAZY LOADING: Import PaperQA only when needed (first time user initializes)
-        # This makes backend startup instant!
-        print("📦 Loading AI models (first time: 1-2 min, then instant)...")
-        from rag_engine import PaperQA as PaperQAClass
-
-        # Create RAG instance
-        # init_request.api_key already validated by Pydantic
-        rag_instance = PaperQAClass(
-            groq_api_key=init_request.api_key,
-            persist_directory=tempfile.mkdtemp()
-        )
-
-        # VALIDATE API KEY by making a test call
-        try:
-            print("📡 Making test call to Groq API...")
-            test_result = rag_instance.llm.invoke("test")
-            print(f"✅ API key validated successfully: {test_result.content[:50]}")
-        except Exception as key_error:
-            rag_instance = None
-            error_msg = str(key_error)
-            print(f"❌ API key validation failed: {error_msg}")
-
-            # Check for specific API key errors
-            if "401" in error_msg or "invalid_api_key" in error_msg or "Invalid API Key" in error_msg:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid Groq API key. Please check your API key at https://console.groq.com/keys"
-                )
-            elif "403" in error_msg or "forbidden" in error_msg:
-                raise HTTPException(
-                    status_code=403,
-                    detail="API key access denied. Your key may be expired or disabled."
-                )
-            else:
-                # Return more detailed error for debugging
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"API validation error: {error_msg[:200]}"
-                )
-
-        loaded_files = []
-        return {"status": "success", "message": "RAG system initialized with valid API key"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Generic error for security (don't leak internal details)
-        raise HTTPException(status_code=500, detail="Failed to initialize system")
-
+# /init endpoint removed - system auto-initializes on first upload/query
 
 @app.post("/upload")
 @limiter.limit(RATE_LIMITS["upload"])
@@ -626,10 +540,10 @@ async def upload_files(request: Request, files: List[UploadFile] = File(...)):
         429: Rate limit exceeded
         500: Server error
     """
-    global rag_instance, loaded_files
+    global loaded_files
 
-    if not rag_instance:
-        raise HTTPException(status_code=400, detail="Call /init first")
+    # Auto-initialize RAG instance on first use
+    rag_instance = get_rag_instance()
 
     # Check total upload size
     # Why: Prevent memory exhaustion from massive uploads
@@ -735,10 +649,8 @@ async def query(request: Request, query_request: QueryRequest):
         429: Rate limit exceeded
         500: Server error
     """
-    global rag_instance
-
-    if not rag_instance:
-        raise HTTPException(status_code=400, detail="Call /init first")
+    # Auto-initialize RAG instance on first use
+    rag_instance = get_rag_instance()
 
     if not rag_instance.vectorstore:
         raise HTTPException(status_code=400, detail="Upload files first")
@@ -814,10 +726,10 @@ async def remove_file(request: Request, remove_request: RemoveFileRequest):
         429: Rate limit exceeded
         500: Server error
     """
-    global rag_instance, loaded_files
+    global loaded_files
 
-    if not rag_instance:
-        raise HTTPException(status_code=400, detail="Call /init first")
+    # Auto-initialize RAG instance on first use
+    rag_instance = get_rag_instance()
 
     if not rag_instance.vectorstore:
         raise HTTPException(status_code=400, detail="No files uploaded yet")
@@ -868,11 +780,11 @@ async def reset(request: Request):
     global rag_instance, loaded_files
 
     try:
-        # Clean up resources
+        # Clean up resources (will auto-re-initialize on next use)
         rag_instance = None
         loaded_files = []
 
-        return {"status": "success", "message": "System reset"}
+        return {"status": "success", "message": "System reset (will re-initialize on next use)"}
     except Exception as e:
         # Log error
         print(f"Failed to reset system: {str(e)}")
