@@ -62,3 +62,4 @@ coverage/
 # Uploads (don't commit user PDFs)
 uploads/
 *.pdf
+.claude/
