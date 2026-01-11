@@ -211,13 +211,13 @@ def get_rag_instance():
     """Lazy load RAG instance on first use (auto-initialized with API key from .env)"""
     global rag_instance
     if rag_instance is None:
-        print("📦 Initializing RAG system (first use - may take 1-2 min)...")
+        print("Initializing RAG system (first use - may take 1-2 min)...")
         from rag_engine import PaperQA as PaperQAClass
         rag_instance = PaperQAClass(
             groq_api_key=GROQ_API_KEY,
             persist_directory=tempfile.mkdtemp()
         )
-        print("✅ RAG system ready!")
+        print("RAG system ready!")
     return rag_instance
 
 # ============================================
