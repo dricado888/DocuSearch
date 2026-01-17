@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
 import { GradientDots } from "@/components/ui/gradient-dots"
 
-const API_URL = 'http://localhost:8000'
+// Use environment variable for API URL, fallback to localhost for development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 function App() {
   // State management (API key removed - now in backend .env)

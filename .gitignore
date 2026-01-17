@@ -25,8 +25,8 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Claude Code local settings (may contain API keys)
-.claude/settings.local.json
+# Local settings
+.local/
 
 # Temporary files
 *.tmp
@@ -62,4 +62,8 @@ coverage/
 # Uploads (don't commit user PDFs)
 uploads/
 *.pdf
+
+# AI/Editor tools
 .claude/
+.cursor/
+.aider/
