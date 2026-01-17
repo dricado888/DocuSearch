@@ -6,11 +6,11 @@ python-multipart>=0.0.6
 # LangChain ecosystem
 langchain>=0.1.0
 langchain-community>=0.0.10
-langchain-anthropic>=0.1.0
 langchain-text-splitters>=0.0.1
 langchain-chroma>=0.1.0
 langchain-huggingface>=0.0.1
 langchain-core>=0.1.0
+langchain-groq>=0.1.0
 
 # Vector database
 chromadb>=0.4.0
@@ -21,8 +21,8 @@ sentence-transformers>=2.2.0
 # PDF processing
 pypdf>=3.17.0
 
-# Anthropic SDK
-anthropic>=0.18.0
+# Groq LLM
+groq>=0.4.0
 
 # Utilities
 python-dotenv>=1.0.0
@@ -30,5 +30,4 @@ pydantic>=2.0.0
 
 # Security
 slowapi>=0.1.9  # Rate limiting
-python-magic>=0.4.27  # File type detection
-python-magic-bin>=0.4.14; sys_platform == 'win32'  # Windows magic binary
+# Note: python-magic removed - causes issues, using fallback validation

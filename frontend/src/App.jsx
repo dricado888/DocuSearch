@@ -282,7 +282,7 @@ function App() {
               {files.length > 0 && (
                 <div className="mt-2 text-center">
                   <span className="text-xs font-sans text-neutral-500">
-                    Total: {getTotalFileSize()} MB / 50MB
+                    Total: {getTotalFileSize()} MB / 200MB
                   </span>
                 </div>
               )}
