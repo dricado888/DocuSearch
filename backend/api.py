@@ -59,8 +59,8 @@ if not GROQ_API_KEY:
     sys.exit(1)
 
 # File upload security limits
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB per file
-MAX_TOTAL_UPLOAD = 50 * 1024 * 1024  # 50MB total per request
+MAX_FILE_SIZE = 25 * 1024 * 1024  # 25MB per file
+MAX_TOTAL_UPLOAD = 200 * 1024 * 1024  # 200MB total per request
 ALLOWED_EXTENSIONS = {'.pdf'}
 ALLOWED_MIME_TYPES = {'application/pdf'}
 
@@ -187,9 +187,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",   # Vite dev server
-        "http://localhost:5173"    # Alternative Vite port
-        # Production: Add your deployed frontend URL
-        # "https://docusearch-pro.vercel.app"
+        "http://localhost:5173",   # Alternative Vite port
+        "https://docu-search-qy9zbuu81-swastik-sahoos-projects.vercel.app",  # Vercel preview
+        "https://docu-search.vercel.app",  # Vercel production (if you set custom domain)
+        "https://*.vercel.app"     # Any Vercel preview deployment
     ],
     allow_credentials=True,  # Allow cookies/auth headers
     allow_methods=["GET", "POST"],  # Only what we use (was: ["*"])
