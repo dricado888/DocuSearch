@@ -19,7 +19,8 @@ class PaperQA:
         self.groq_api_key = groq_api_key
         self.persist_directory = persist_directory
         
-        # Better embeddings - BAAI/bge-small-en-v1.5 is much more accurate
+        # High quality embeddings - BAAI/bge-small-en-v1.5
+        # Better accuracy for document retrieval
         print("Loading embedding model (this may take a moment)...")
         self.embeddings = HuggingFaceEmbeddings(
             model_name="BAAI/bge-small-en-v1.5",
