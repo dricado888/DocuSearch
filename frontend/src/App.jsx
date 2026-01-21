@@ -450,6 +450,7 @@ function App() {
 // Chat item component - Dark theme Q&A display
 function ChatItem({ item }) {
   const [expanded, setExpanded] = useState(true)
+  const [sourcesExpanded, setSourcesExpanded] = useState(false)
 
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 shadow-xl overflow-hidden
@@ -483,33 +484,55 @@ function ChatItem({ item }) {
       {expanded && (
         <div className="px-6 pb-5 bg-neutral-800/20">
           <div className="p-5 rounded-lg bg-neutral-800/50 border border-neutral-700 mb-4">
-            <p className="text-technical text-neutral-200 leading-relaxed whitespace-pre-wrap">
+            <p className="text-white leading-relaxed whitespace-pre-wrap">
               {item.answer}
             </p>
           </div>
 
-          {/* Sources */}
+          {/* Sources - Collapsible */}
           {item.sources && item.sources.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-sm text-neutral-400 font-sans font-semibold mb-3">
-                Sources ({item.sources.length})
-              </p>
-              {item.sources.map((source, j) => (
-                <div key={j} className="p-3.5 rounded-lg bg-neutral-800/30 border border-neutral-700
-                                       hover:border-orange-500/30 hover:bg-orange-500/5
-                                       transition-all">
-                  <div className="flex items-center gap-2 text-orange-400 font-sans
-                                font-medium mb-2 text-sm">
-                    <FileText className="w-4 h-4" />
-                    <span>{source.paper}</span>
-                    <span className="text-neutral-600">•</span>
-                    <span className="text-neutral-400">Page {source.page}</span>
-                  </div>
-                  <p className="text-neutral-400 text-xs font-sans leading-relaxed line-clamp-2">
-                    {source.content_preview}
-                  </p>
+            <div>
+              {/* Sources Toggle Button */}
+              <button
+                onClick={() => setSourcesExpanded(!sourcesExpanded)}
+                className="w-full flex items-center justify-between p-3 rounded-lg
+                         bg-neutral-800/30 border border-neutral-700 hover:border-neutral-600
+                         transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-orange-400" />
+                  <span className="text-sm text-neutral-300 font-sans font-medium">
+                    Sources ({item.sources.length})
+                  </span>
                 </div>
-              ))}
+                {sourcesExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-neutral-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-neutral-500" />
+                )}
+              </button>
+
+              {/* Expanded Sources List */}
+              {sourcesExpanded && (
+                <div className="mt-2 space-y-2">
+                  {item.sources.map((source, j) => (
+                    <div key={j} className="p-3.5 rounded-lg bg-neutral-800/30 border border-neutral-700
+                                           hover:border-orange-500/30 hover:bg-orange-500/5
+                                           transition-all">
+                      <div className="flex items-center gap-2 text-orange-400 font-sans
+                                    font-medium mb-2 text-sm">
+                        <FileText className="w-4 h-4" />
+                        <span>{source.paper}</span>
+                        <span className="text-neutral-600">•</span>
+                        <span className="text-neutral-400">Page {source.page}</span>
+                      </div>
+                      <p className="text-neutral-400 text-xs font-sans leading-relaxed line-clamp-2">
+                        {source.content_preview}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
