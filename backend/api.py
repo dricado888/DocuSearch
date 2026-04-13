@@ -455,8 +455,10 @@ async def validate_upload_file(file: UploadFile) -> None:
                     status_code=400,
                     detail=f"Invalid file content. Expected PDF, got: {mime}"
                 )
-        except Exception as e:
-            # If magic fails, reject (fail secure)
+        except HTTPException:
+            raise  # re-raise with original detail intact
+        except Exception:
+            # If magic itself fails (e.g. missing libmagic on Windows), reject (fail secure)
             raise HTTPException(
                 status_code=400,
                 detail=f"Failed to validate file type for {filename}"
