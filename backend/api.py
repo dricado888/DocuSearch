@@ -204,6 +204,11 @@ app.add_middleware(
     max_age=600,  # Cache preflight for 10 minutes (performance)
 )
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 # Global state
 rag_instance: Optional[PaperQA] = None
 loaded_files: List[str] = []
